@@ -475,8 +475,6 @@ function onWindowResize() {
 
 再次刷新页面，拉伸窗口我们能看到camera和renderer都有相应的变化。
 
-
-
 至此，一个简单的漫游场景就实现了。推荐同学们以 three.js 官网为参考，首先浏览官方 examples ，查看 examples 的源代码，碰到问题时查阅 documentation。
 
 > 相关链接：
@@ -657,7 +655,7 @@ socket.io 是一个面向实时web应用的javascript库，他有两个部分：
 在index.html中添加下面的语句
 
 ```javascript
-const socket = io('localhost:3000')
+const socket = io('ws://localhost:3000');
 ```
 
 此时客户端的基本准备工作就完成了，
@@ -720,20 +718,25 @@ client ifh80z1mXNAt4yrgAAAA disconnected
 
   ```javascript
   let playerMap = new Map();
-  socket.on('player', data => {
-    if (playerMap.has(data.socketid)) {
-  		let model = playerMap.get(data.socketid);
-        model.position.set(data.position.x, data.position.y, data.position.z);
-        model.rotation.set(data.rotation._x, data.rotation._y + Math.PI / 2, data.rotation._z);
-      } else {
-        const loader = new THREE.GLTFLoader();
-        loader.load("./assets/models/duck.glb", (mesh) => {
-        	mesh.scene.scale.set(10, 10, 10);
-        	scene.add(mesh.scene);
-        	playerMap.set(data.socketid, mesh.scene);
-  			});
-  		}
-  });
+      socket.on('player', data => {
+          if (playerMap.has(data.socketid)) {
+              let model = playerMap.get(data.socketid);
+              model.position.set(data.position.x, data.position.y, data.position.z);
+              model.rotation.set(data.rotation._x, data.rotation._y + Math.PI / 2, data.rotation._z);
+          } else {
+              socket.emit('player', {position: fpc.yawObject.position, rotation: fpc.yawObject.rotation});
+              const loader = new THREE.GLTFLoader();
+              loader.load("./assets/models/duck.glb", (mesh) => {
+                  //如果这个判断注释掉会怎么样，为什么
+              	if(!playerMap.has(data.socketid)) {
+  					mesh.scene.scale.set(10, 10, 10);
+  					scene.add(mesh.scene);
+  					playerMap.set(data.socketid, mesh.scene);
+  					let model = playerMap.get(data.socketid);
+  				}
+              });
+          }
+      });
   socket.on('offline', data => {
     if (playerMap.has(data.socketid)) {
       scene.remove(playerMap.get(data.socketid));
@@ -741,8 +744,8 @@ client ifh80z1mXNAt4yrgAAAA disconnected
     }
   });
   ```
-
-* 
+  
+  代码中标定的判断如果注释掉怎么样？并说出原因。此题作为加分题。
 
 * 重启node服务端，打开两个浏览器窗口，我们可以看到每位玩家的实时信息都会在其他玩家的浏览器中以"duck"这个模型为载体展现出来。
 
@@ -759,4 +762,3 @@ client ifh80z1mXNAt4yrgAAAA disconnected
 提交方式：待定
 
 任何问题，欢迎随时联系TA。
-
